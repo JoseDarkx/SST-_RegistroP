@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Agregar Evaluación Médica | SST-AnalyTIC</title>
+    <link rel="stylesheet" href="../static/css/capacitaciones.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar heredada -->
+    <div class="sidebar">
+    <h2>SST-AnalyTIC</h2>
+    <ul>
+        <li><a href="/dashboard" class="menu-link">Inicio</a></li>
+
+        <li class="section-title">GESTIÓN PRINCIPAL</li>
+        <li><a href="/capacitaciones" class="menu-link">Capacitaciones</a></li>
+        <li><a href="/evaluaciones_medicas" class="menu-link">Evaluaciones Médicas</a></li>
+        <li><a href="/control_epp" class="menu-link">Gestión EPP</a></li>
+        <li><a href="/normas_legales" class="menu-link">Normas Legales</a></li>
+        <li><a href="/firma_digital" class="menu-link">Firma Digital</a></li>
+        <li><a href="/solicitudes_contrasena" class="menu-link">Solicitudes Contraseña</a></li>
+
+        <li class="section-title">ADMINISTRACIÓN</li>
+        <li><a href="/empresas" class="menu-link">Empresas</a></li>
+        <li><a href="/usuarios" class="menu-link">Usuarios</a></li>
+        <li><a href="/formatos_globales" class="menu-link">Formatos Globales</a></li>
+        <li><a href="/documentacion" class="menu-link">Documentación</a></li>
+
+        <li class="section-title">GESTIÓN DE PERSONAL</li>
+        <li><a href="/planes_accion" class="menu-link">Planes de Acción</a></li>
+        <li><a href="/incidentes_accidentes" class="menu-link">Incidentes y Accidentes</a></li>
+        <li><a href="/historial_cambios" class="menu-link">Historial de Cambios</a></li>
+      
+    </ul>
+</div>
+
+    <div class="container mt-4">
+        <div class="card shadow-sm p-4">
+            <h2 class="mb-4">Agregar Evaluación Médica</h2>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+    <!-- Formulario -->
+    <form action="{{ url_for('agregar_evaluaciones') }}" method="POST" enctype="multipart/form-data" class="card p-4 shadow-lg">
+
+        <!-- Selección de personal -->
+        <div class="mb-3">
+            <label for="personal_id" class="form-label">Seleccionar Personal</label>
+            <select class="form-select" name="personal_id" id="personal_id" required>
+                <option value="" disabled selected>-- Seleccione un trabajador --</option>
+                {% for persona in personal %}
+                    <option value="{{ persona.id }}" data-empresa="{{ persona.nit_empresa }}">
+                        {{ persona.nombre_completo }} - {{ persona.documento_identidad }} ({{ persona.empresa }})
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- NIT empresa -->
+        <div class="mb-3">
+            <label for="nit_empresa" class="form-label">NIT Empresa</label>
+            <input type="text" class="form-control" id="nit_empresa" name="nit_empresa" readonly required>
+        </div>
+
+        <!-- Fecha -->
+        <div class="mb-3">
+            <label for="fecha" class="form-label">Fecha de Evaluación</label>
+            <input type="date" class="form-control" id="fecha" name="fecha" required>
+        </div>
+
+        <!-- Tipo de evaluación -->
+        <div class="mb-3">
+            <label for="tipo_evaluacion" class="form-label">Tipo de Evaluación</label>
+            <select class="form-select" id="tipo_evaluacion" name="tipo_evaluacion" required>
+                <option value="">-- Seleccione tipo --</option>
+                <option value="Ingreso">Ingreso</option>
+                <option value="Periódico">Periódico</option>
+                <option value="Egreso">Egreso</option>
+            </select>
+        </div>
+
+
+        <!-- Médico examinador -->
+        <div class="mb-3">
+            <label for="medico_examinador" class="form-label">Médico Examinador</label>
+            <input type="text" class="form-control" id="medico_examinador" name="medico_examinador" required>
+        </div>
+
+        <!-- Archivo -->
+        <div class="mb-3">
+            <label for="archivo" class="form-label">Subir Archivo</label>
+            <input type="file" class="form-control" id="archivo" name="archivo">
+        </div>
+
+        <!-- Restricciones -->
+        <div class="mb-3">
+            <label for="restricciones" class="form-label">Restricciones</label>
+            <textarea class="form-control" id="restricciones" name="restricciones" rows="2"></textarea>
+        </div>
+
+        <!-- Observaciones -->
+        <div class="mb-3">
+            <label for="observaciones" class="form-label">Observaciones</label>
+            <textarea class="form-control" id="observaciones" name="observaciones" rows="2"></textarea>
+        </div>
+
+        <!-- Recomendaciones -->
+        <div class="mb-3">
+            <label for="recomendaciones" class="form-label">Recomendaciones</label>
+            <textarea class="form-control" id="recomendaciones" name="recomendaciones" rows="2"></textarea>
+        </div>
+
+        <!-- Botón -->
+        <div class="text-center">
+            <button type="submit" class="btn btn-success">Guardar Evaluación</button>
+            <a href="{{ url_for('evaluaciones_medicas') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+    </div>
+    <script>
+        document.getElementById('personal_id').addEventListener('change', function () {
+            var empresa = this.options[this.selectedIndex].getAttribute('data-empresa');
+            document.getElementById('nit_empresa').value = empresa || '';
+        });
+    </script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
