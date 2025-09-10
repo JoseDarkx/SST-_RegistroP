@@ -4,7 +4,9 @@ import os
 import mysql.connector
 from datetime import datetime
 
-documentacion_bp = Blueprint('documentacion', __name__)
+documentos_bp = Blueprint('documentos', __name__)
+
+
 
 # Configuración de archivos permitidos
 ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png'}
@@ -17,7 +19,7 @@ def allowed_file(filename):
 # ------------------------------
 # Ruta: Listado de Documentos
 # ------------------------------
-@documentacion_bp.route('/documentacion')
+@documentos_bp.route('/documentacion')
 def documentacion():
     if 'usuario' not in session:
         return redirect(url_for('auth.login'))  # 👈 ajustado a blueprint auth
@@ -94,7 +96,7 @@ def documentacion():
 # ------------------------------
 # Rutas CRUD
 # ------------------------------
-@documentacion_bp.route('/agregar_documento')
+@documentos_bp.route('/agregar_documento')
 def agregar_documento():
     if 'usuario' not in session:
         return redirect(url_for('auth.login'))
@@ -121,7 +123,7 @@ def agregar_documento():
     except mysql.connector.Error as e:
         print(f"Error en agregar_documento: {e}")
         flash('Error al cargar datos del formulario', 'error')
-        return redirect(url_for('documentacion.documentacion'))
+        return redirect(url_for('documentos.documentacion'))
     finally:
         if 'cursor' in locals():
             cursor.close()
@@ -129,7 +131,7 @@ def agregar_documento():
             connection.close()
 
 
-@documentacion_bp.route('/guardar_documento', methods=['POST'])
+@documentos_bp.route('/guardar_documento', methods=['POST'])
 def guardar_documento():
     if 'usuario' not in session:
         return redirect(url_for('auth.login'))
@@ -139,7 +141,7 @@ def guardar_documento():
         nombre = request.form.get('nombre', '').strip()
         if not nit_empresa or not nombre:
             flash('Empresa y nombre del documento son obligatorios', 'error')
-            return redirect(url_for('documentacion.agregar_documento'))
+            return redirect(url_for('documentos.agregar_documento'))
 
         archivo = request.files.get('archivo')
         archivo_url = None
@@ -147,7 +149,7 @@ def guardar_documento():
         if archivo and archivo.filename:
             if not allowed_file(archivo.filename):
                 flash('Tipo de archivo no permitido', 'error')
-                return redirect(url_for('documentacion.agregar_documento'))
+                return redirect(url_for('documentos.agregar_documento'))
 
             filename = secure_filename(archivo.filename)
             unique_name = f"{nit_empresa}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
@@ -180,12 +182,12 @@ def guardar_documento():
 
         connection.commit()
         flash('Documento guardado exitosamente', 'success')
-        return redirect(url_for('documentacion.documentacion'))
+        return redirect(url_for('documentos.documentacion'))
 
     except Exception as e:
         print(f"Error en guardar_documento: {e}")
         flash('Error interno al guardar el documento', 'error')
-        return redirect(url_for('documentacion.agregar_documento'))
+        return redirect(url_for('documentos.agregar_documento'))
     finally:
         if 'cursor' in locals():
             cursor.close()
@@ -196,7 +198,7 @@ def guardar_documento():
 # ------------------------------
 # RUTA: Editar Documento
 # ------------------------------
-@documentacion_bp.route('/editar/<int:documento_id>')
+@documentos_bp.route('/editar/<int:documento_id>')
 def editar_documento(documento_id):
     if 'usuario_id' not in session:
         return redirect(url_for('auth.iniciar_sesion'))
@@ -215,7 +217,7 @@ def editar_documento(documento_id):
 
         if not documento:
             flash('Documento no encontrado', 'error')
-            return redirect(url_for('documentacion.documentacion'))
+            return redirect(url_for('documentos.documentacion'))
 
         cursor.execute("SELECT nit_empresa, nombre FROM empresas WHERE estado = 'Activa' ORDER BY nombre")
         empresas = cursor.fetchall()
@@ -231,7 +233,7 @@ def editar_documento(documento_id):
     except mysql.connector.Error as e:
         print(f"Error en editar_documento: {e}")
         flash('Error al cargar documento', 'error')
-        return redirect(url_for('documentacion.documentacion'))
+        return redirect(url_for('documentos.documentacion'))
     finally:
         if 'cursor' in locals():
             cursor.close()
@@ -239,7 +241,7 @@ def editar_documento(documento_id):
 # ------------------------------
 # RUTA: Actualizar Documento
 # ------------------------------
-@documentacion_bp.route('/actualizar/<int:documento_id>', methods=['POST'])
+@documentos_bp.route('/actualizar/<int:documento_id>', methods=['POST'])
 def actualizar_documento(documento_id):
     if 'usuario_id' not in session:
         return redirect(url_for('auth.iniciar_sesion'))
@@ -317,7 +319,7 @@ def actualizar_documento(documento_id):
                 print(f"Error al eliminar archivo anterior: {e}")
 
         flash('Documento actualizado exitosamente', 'success')
-        return redirect(url_for('documentacion.documentacion'))
+        return redirect(url_for('documentos.documentacion'))
 
     except mysql.connector.Error as e:
         print(f"Error en actualizar_documento: {e}")
@@ -330,7 +332,7 @@ def actualizar_documento(documento_id):
 # ------------------------------
 # RUTA: Eliminar Documento
 # ------------------------------
-@documentacion_bp.route('/eliminar/<int:documento_id>', methods=['POST'])
+@documentos_bp.route('/eliminar/<int:documento_id>', methods=['POST'])
 def eliminar_documento(documento_id):
     if 'usuario_id' not in session:
         return jsonify({'success': False, 'message': 'No autorizado'}), 401
@@ -369,7 +371,7 @@ def eliminar_documento(documento_id):
 # ------------------------------
 # RUTA: Descargar Documento
 # ------------------------------
-@documentacion_bp.route('/descargar/<int:documento_id>')
+@documentos_bp.route('/descargar/<int:documento_id>')
 def descargar_documento(documento_id):
     if 'usuario_id' not in session:
         return redirect(url_for('auth.iniciar_sesion'))
@@ -383,11 +385,11 @@ def descargar_documento(documento_id):
 
         if not documento or not documento['archivo_url']:
             flash('Archivo no encontrado', 'error')
-            return redirect(url_for('documentacion.documentacion'))
+            return redirect(url_for('documentos.documentacion'))
 
         if not os.path.exists(documento['archivo_url']):
             flash('El archivo físico no existe', 'error')
-            return redirect(url_for('documentacion.documentacion'))
+            return redirect(url_for('documentos.documentacion'))
 
         return send_file(
             documento['archivo_url'],
@@ -398,11 +400,11 @@ def descargar_documento(documento_id):
     except mysql.connector.Error as e:
         print(f"Error en descargar_documento: {e}")
         flash('Error al descargar documento', 'error')
-        return redirect(url_for('documentacion.documentacion'))
+        return redirect(url_for('documentos.documentacion'))
     except Exception as e:
         print(f"Error inesperado en descargar_documento: {e}")
         flash('Error interno del servidor', 'error')
-        return redirect(url_for('documentacion.documentacion'))
+        return redirect(url_for('documentos.documentacion'))
     finally:
         if 'cursor' in locals():
             cursor.close()

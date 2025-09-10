@@ -2,7 +2,12 @@ import os
 import mysql.connector
 from flask import render_template, request, redirect, url_for, session, flash
 from werkzeug.utils import secure_filename
-from . import evaluaciones_medicas_bp
+from flask import Blueprint
+
+evaluaciones_medicas_bp = Blueprint(
+    'evaluaciones_medicas', __name__, url_prefix='/evaluaciones_medicas'
+)
+
 
 # ===============================
 # LISTAR EVALUACIONES MÉDICAS
@@ -81,11 +86,11 @@ def agregar_evaluaciones():
     cursor = conexion.cursor(dictionary=True)
 
     cursor.execute("""
-        SELECT p.id, p.nombre_completo, p.documento_identidad, e.nombre AS empresa, p.nit_empresa
-        FROM personal p
-        JOIN empresas e ON p.nit_empresa = e.nit_empresa
-        WHERE p.estado = 'Activo'
-    """)
+    SELECT p.id, p.nombre_completo, p.documento_identidad, e.nombre AS empresa, p.nit_empresa
+    FROM personal p
+    JOIN empresas e ON p.nit_empresa = e.nit_empresa
+    WHERE 1=1  -- Se eliminó el filtro de estado
+""")
     personal = cursor.fetchall()
 
     if request.method == 'POST':
@@ -233,4 +238,13 @@ def editar_evaluaciones(evaluacion_id):
 
     cursor.close()
     conexion.close()
-    return render_template('editar_evaluaciones.html', evaluacion=evaluacion)
+    return render_template('editar_evaluacion.html', evaluacion=evaluacion)
+
+@evaluaciones_medicas_bp.route('/editar_evaluacion/<int:evaluacion_id>', methods=['GET', 'POST'])
+def editar_evaluacion(evaluacion_id):
+    """Redirigir desde la ruta singular a la plural"""
+    if request.method == 'POST':
+        return editar_evaluaciones(evaluacion_id)
+    else:
+        return redirect(url_for('evaluaciones_medicas.editar_evaluaciones', evaluacion_id=evaluacion_id))
+

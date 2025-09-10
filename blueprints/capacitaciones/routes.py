@@ -177,6 +177,105 @@ def eliminar_capacitacion(capacitacion_id):
         if 'cursor' in locals(): cursor.close()
         if 'connection' in locals(): connection.close()
 
+@capacitaciones_bp.route('/reporte_capacitaciones_pdf')
+def reporte_capacitaciones_pdf():
+    """Exportar reporte PDF de capacitaciones"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('auth.iniciar_sesion'))
+    
+    try:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.lib import colors
+        import io
+        
+        # Conectar a la base de datos
+        connection = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="",
+            database="gestussg"
+        )
+        cursor = connection.cursor(dictionary=True)
+        
+        # Obtener datos
+        query = """
+            SELECT c.fecha, e.nombre as empresa, c.responsable, c.estado,
+                   COUNT(ec.id) as total_evaluaciones,
+                   SUM(CASE WHEN ec.resultado = 'Aprobado' THEN 1 ELSE 0 END) as aprobados,
+                   ROUND((SUM(CASE WHEN ec.resultado = 'Aprobado' THEN 1 ELSE 0 END) / 
+                         GREATEST(COUNT(ec.id), 1)) * 100, 2) as efectividad_porcentaje
+            FROM capacitaciones c
+            JOIN empresas e ON c.nit_empresa = e.nit_empresa
+            LEFT JOIN evaluaciones_capacitacion ec ON c.id = ec.capacitacion_id
+            GROUP BY c.id, c.fecha, e.nombre, c.responsable, c.estado
+            ORDER BY c.fecha DESC
+        """
+        
+        cursor.execute(query)
+        capacitaciones = cursor.fetchall()
+        
+        # Crear PDF
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        elements = []
+        
+        styles = getSampleStyleSheet()
+        elements.append(Paragraph("Reporte de Capacitaciones", styles['Title']))
+        elements.append(Spacer(1, 12))
+        
+        # Preparar datos para la tabla
+        data = [['Fecha', 'Empresa', 'Responsable', 'Estado', 'Evaluaciones', 'Aprobados', 'Efectividad']]
+        
+        for cap in capacitaciones:
+            data.append([
+                cap['fecha'].strftime('%Y-%m-%d') if cap['fecha'] else '',
+                cap['empresa'],
+                cap['responsable'],
+                cap['estado'],
+                str(cap['total_evaluaciones']),
+                str(cap['aprobados']),
+                f"{cap['efectividad_porcentaje']}%"
+            ])
+        
+        # Crear tabla
+        table = Table(data)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        
+        elements.append(table)
+        doc.build(elements)
+        
+        buffer.seek(0)
+        
+        return send_file(
+            buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name='reporte_capacitaciones.pdf'
+        )
+        
+    except ImportError:
+        flash('Error: Biblioteca ReportLab no instalada. Ejecuta: pip install reportlab', 'error')
+        return redirect(url_for('capacitaciones.lista_capacitaciones'))
+    except Exception as e:
+        print(f"Error al generar PDF: {e}")
+        flash('Error al generar el reporte PDF', 'error')
+        return redirect(url_for('capacitaciones.lista_capacitaciones'))
+    finally:
+        if 'connection' in locals():
+            connection.close()
+
 @capacitaciones_bp.route('/reporte_capacitaciones_excel')
 def reporte_capacitaciones_excel():
     """Exportar reporte Excel de capacitaciones"""

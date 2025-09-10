@@ -1,4 +1,3 @@
-# blueprints/empresas/routes.py
 
 import os
 from flask import (

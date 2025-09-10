@@ -1,6 +1,9 @@
 from flask import render_template, request, redirect, url_for, session, flash
 from extensions import get_db
-from . import epp_bp
+from flask import Blueprint
+
+epp_bp = Blueprint("epp", __name__, url_prefix="/epp")
+
 
 # ============================================================
 # CONTROL DE EPP
@@ -58,7 +61,7 @@ def asignar_epp():
         SELECT p.id, p.nombre_completo, p.cargo, e.nombre AS empresa
         FROM personal p
         JOIN empresas e ON p.nit_empresa = e.nit_empresa
-        WHERE p.estado = 'Activo'
+    
     """)
     personal = cursor.fetchall()
 
@@ -148,7 +151,7 @@ def reporte_general_epp():
     resultado = cursor.fetchone()
 
     estado = "OK"
-    if resultado["vencidos"] > 5:
+    if resultado and resultado.get("vencidos") is not None and resultado.get("vencidos", 0) > 5:
         estado = "Crítico"
     elif resultado["proximos_vencer"] > 5:
         estado = "Atención"
